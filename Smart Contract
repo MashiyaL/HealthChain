@@ -1,0 +1,82 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract MedicalDApp {
+    struct Patient {
+        uint id;
+        string name;
+        string medicalHistory;
+        string ipfsHash;
+        address walletAddress;
+    }
+
+    struct Doctor {
+        uint id;
+        string name;
+        string specialization;
+        string ipfsHash;
+        address walletAddress;
+    }
+
+    struct Medication {
+        uint id;
+        string name;
+        uint price;
+    }
+
+    mapping(uint => Patient) public patients;
+    mapping(uint => Doctor) public doctors;
+    mapping(uint => Medication) public medications;
+    mapping(address => uint) public patientIds;
+    mapping(address => uint) public doctorIds;
+    mapping(address => uint) public balances;
+
+    uint public patientCount;
+    uint public doctorCount;
+    uint public medicationCount;
+
+    event PatientRegistered(uint id, string name, string ipfsHash, address walletAddress);
+    event DoctorRegistered(uint id, string name, string ipfsHash, address walletAddress);
+    event MedicationPurchased(uint patientId, uint medicationId, uint price);
+
+    function registerPatient(string memory _name, string memory _medicalHistory, string memory _ipfsHash) public {
+        patientCount++;
+        patients[patientCount] = Patient(patientCount, _name, _medicalHistory, _ipfsHash, msg.sender);
+        patientIds[msg.sender] = patientCount;
+        emit PatientRegistered(patientCount, _name, _ipfsHash, msg.sender);
+    }
+
+    function registerDoctor(string memory _name, string memory _specialization, string memory _ipfsHash) public {
+        doctorCount++;
+        doctors[doctorCount] = Doctor(doctorCount, _name, _specialization, _ipfsHash, msg.sender);
+        doctorIds[msg.sender] = doctorCount;
+        emit DoctorRegistered(doctorCount, _name, _ipfsHash, msg.sender);
+    }
+
+    function addMedication(string memory _name, uint _price) public {
+        medicationCount++;
+        medications[medicationCount] = Medication(medicationCount, _name, _price);
+    }
+
+    function purchaseMedication(uint _medicationId) public payable {
+        uint patientId = patientIds[msg.sender];
+        require(patientId != 0, "Patient not registered");
+        Medication memory medication = medications[_medicationId];
+        require(msg.value == medication.price, "Incorrect value sent");
+
+        balances[msg.sender] += msg.value;
+        emit MedicationPurchased(patientId, _medicationId, medication.price);
+    }
+
+    function getPatient(uint _id) public view returns (Patient memory) {
+        return patients[_id];
+    }
+
+    function getDoctor(uint _id) public view returns (Doctor memory) {
+        return doctors[_id];
+    }
+
+    function getMedication(uint _id) public view returns (Medication memory) {
+        return medications[_id];
+    }
+}
